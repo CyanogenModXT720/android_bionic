@@ -167,10 +167,16 @@ android_gethostbyaddr_proxy(struct hostent* hp, const void *addr, socklen_t addr
 	pthread_mutex_lock(&dnsproxyd_lock);
 	sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sock < 0) {
+		pthread_mutex_unlock(&dnsproxyd_lock);
 		return -1;
 	}
 
-	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+
+	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0) {
+		pthread_mutex_unlock(&dnsproxyd_lock);
+		return -1;
+	}
+
 	memset(&proxy_addr, 0, sizeof(proxy_addr));
 	proxy_addr.sun_family = AF_UNIX;
 	strlcpy(proxy_addr.sun_path, "/dev/socket/dnsproxyd",
